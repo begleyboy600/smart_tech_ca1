@@ -1,8 +1,23 @@
-# import cifar10 and cifar100 datasets from keras
 from keras.datasets import cifar10, cifar100
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.optimizers import Adam
+from keras.utils import to_categorical
+from keras.layers import Conv2D, MaxPooling2D
+import pickle
+import pandas as pd
+import random
+import cv2
+import requests
+from PIL import Image
+from keras.preprocessing.image import ImageDataGenerator
 
 def show_samples(data, labels): 
     plt.subplots(figsize=(10, 10)) 
@@ -13,6 +28,11 @@ def show_samples(data, labels):
         plt.imshow(data[k]) 
     plt.tight_layout() 
     plt.show()
+
+
+def grayscale(img):
+  img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+  return img
 
 # load CIFAR-10 data
 (x_train_1, y_train_1), (x_test_1, y_test_1) = cifar10.load_data()
@@ -83,6 +103,47 @@ print("Training labels shape:", y_train.shape)
 print("Testing labels shape:", y_test.shape)
 
 # show_samples(x_train, y_train)
+
+num_of_samples = []
+cols = 5
+unique_classes = np.unique(y_train)
+
+fig, axs = plt.subplots(nrows=len(unique_classes), ncols=cols, figsize=(5, 50))
+fig.tight_layout()
+
+for i in range(cols):
+    for j in unique_classes:
+        x_selected = x_train[y_train == j]
+        axs[np.where(unique_classes == j)[0][0]][i].imshow(
+            x_selected[random.randint(0, len(x_selected) - 1), :, :], cmap=plt.get_cmap("gray")
+        )
+        axs[np.where(unique_classes == j)[0][0]][i].axis("off")
+        if i == 2:
+            num_of_samples.append(len(x_selected))
+            axs[np.where(unique_classes == j)[0][0]][i].set_title(str(j))
+plt.show()
+
+
+print(num_of_samples)
+plt.figure(figsize=(12, 4))
+plt.bar(unique_classes, num_of_samples)
+plt.title("Distribution of the training set")
+plt.ylabel("Number of images")
+plt.show()
+
+# Display the 1000th image
+plt.imshow(x_train[1000])  
+plt.title(f"Class: {y_train[1000]}")
+plt.axis("off")
+print(x_train[1000].shape)
+print(y_train[1000])
+plt.show()
+
+# grey scale the 1000th image
+img = grayscale(x_train[1000])
+plt.imshow(img)
+plt.axis("off")
+print(img.shape)
 
 
 
