@@ -149,6 +149,8 @@ def get_distribution_of_classes(x_train, y_train, unique_classes, x_selected):
     plt.ylabel("Number of images")
     plt.show()
 
+get_distribution_of_classes(x_train, y_train, unique_classes, x_selected)
+
 def grayscale(img):
     if img.dtype == np.uint8:
         img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -240,9 +242,9 @@ def data_augmentation(x_train, y_train):
     datagen.fit(x_train_desired_classes)
     batches = datagen.flow(x_train_desired_classes, y_train_desired_classes, batch_size=5)
     x_batch, y_batch = next(batches)
-    return x_batch, y_batch
+    return x_batch, y_batch, datagen
 
-x_batch, y_batch = data_augmentation(x_train, y_train)
+x_batch, y_batch, datagen = data_augmentation(x_train, y_train)
 def concatenate_augmented_data(x_train, y_train, x_batch, y_batch):
     x_train = np.concatenate([x_train, x_batch])
     y_train = np.concatenate([y_train, y_batch])
@@ -254,12 +256,13 @@ class_counts = {label: np.sum(y_train == label) for label in np.unique(y_train)}
 
 
 # Plot the distribution
-plt.figure(figsize=(10, 6))
-plt.bar(class_counts.keys(), class_counts.values())
-plt.title("Distribution of Classes in Updated Training Data")
-plt.xlabel("Class Label")
-plt.ylabel("Number of Samples")
-plt.show()
+def get_distribution_of_classes(class_counts):
+    plt.figure(figsize=(10, 6))
+    plt.bar(class_counts.keys(), class_counts.values())
+    plt.title("Distribution of Classes in Updated Training Data")
+    plt.xlabel("Class Label")
+    plt.ylabel("Number of Samples")
+    plt.show()
 
 print("=========================================")
 for label, count in class_counts.items():
@@ -288,11 +291,36 @@ def one_hot_encoding(y_train_numeric, y_val_numeric, y_test_numeric, num_classes
 
 y_train, y_val, y_test = one_hot_encoding(y_train_numeric, y_val_numeric, y_test_numeric, num_classes)
 
+def model():
+    model = Sequential()
+    model.add(Conv2D(60, (5, 5), input_shape=(32, 32, 1), activation='relu'))
+    model.add(Conv2D(60, (5, 5), input_shape=(32, 32, 1), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(30, (3, 3), activation='relu'))
+    model.add(Conv2D(30, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dense(500, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(num_classes, activation='softmax'))
+    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
 
+model = model()
+print(model.summary())
 
+history = model.fit(datagen.flow(x_train, y_train, batch_size=50), steps_per_epoch=500, epochs=10, validation_data=(x_val, y_val), batch_size=400, verbose=1, shuffle=1)
 
+def plot_loss(history):
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.legend(['training', 'validation'])
+    plt.title("Loss")
+    plt.xlabel('epochs')
+    plt.show()
 
-
+plot_loss(history)
 
 
 
