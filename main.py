@@ -7,10 +7,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Convolution2D
 from keras.optimizers import Adam
 from keras.utils import to_categorical
 from keras.layers import Conv2D, MaxPooling2D
+from keras import regularizers
 import pickle
 import pandas as pd
 import random
@@ -22,6 +23,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelEncoder
 from keras.utils import to_categorical
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras import layers, models, optimizers
 
 def show_samples(data, labels): 
     plt.subplots(figsize=(10, 10)) 
@@ -291,27 +295,6 @@ def one_hot_encoding(y_train_numeric, y_val_numeric, y_test_numeric, num_classes
 
 y_train, y_val, y_test = one_hot_encoding(y_train_numeric, y_val_numeric, y_test_numeric, num_classes)
 
-def model():
-    model = Sequential()
-    model.add(Conv2D(60, (5, 5), input_shape=(32, 32, 1), activation='relu'))
-    model.add(Conv2D(60, (5, 5), input_shape=(32, 32, 1), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(30, (3, 3), activation='relu'))
-    model.add(Conv2D(30, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.5))
-    model.add(Flatten())
-    model.add(Dense(500, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(num_classes, activation='softmax'))
-    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
-    return model
-
-model = model()
-print(model.summary())
-
-history = model.fit(datagen.flow(x_train, y_train, batch_size=50), steps_per_epoch=500, epochs=10, validation_data=(x_val, y_val), batch_size=400, verbose=1, shuffle=1)
-
 def plot_loss(history):
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -320,7 +303,45 @@ def plot_loss(history):
     plt.xlabel('epochs')
     plt.show()
 
-plot_loss(history)
+def cnn_model():
+    model = models.Sequential()
 
+    # Convolutional layers
+    model.add(layers.Conv2D(64, kernel_size=3, activation='relu', input_shape=(32, 32, 1)))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=2))
+    model.add(layers.Dropout(0.3))
+
+    model.add(layers.Conv2D(128, kernel_size=3, activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=2))
+    model.add(layers.Dropout(0.3))
+
+    model.add(layers.Conv2D(256, kernel_size=3, activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=2))
+    model.add(layers.Dropout(0.3))
+    # Global average pooling and dense layers for classification
+    model.add(layers.GlobalAveragePooling2D())
+    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(num_classes, activation='softmax'))
+
+    # Compile the model
+    model.compile(optimizer=optimizers.Adam(learning_rate=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+    
+    return model
+
+cnn_model = cnn_model()
+
+# Model summary
+print(cnn_model.summary())
+
+# Training the simple CNN model
+cnn_history= cnn_model.fit(x_train, y_train, epochs=50, validation_data=(x_val, y_val), batch_size=64, verbose=1)
+plot_loss(cnn_history)
 
 
